@@ -274,9 +274,10 @@ numbers `L_j(f)`.
   (`DetBij.exists_perm`); `DetBij.exists_bijection` translates.
 * Lemma 3.4. The paper uses the unique monomial of highest total degree in the determinant:
   the identity permutation contributes `(s₁ ⋯ sₙ)^|O|`, and every other permutation contributes
-  a monomial of strictly smaller total degree. The Lean proof (`DetLow/NonZero.lean`) instead
-  specializes the variables and uses strict diagonal dominance, via the theorem
-  `det_ne_zero_of_sum_row_lt_diag` of Mathlib.
+  a monomial of strictly smaller total degree. The Lean proof (`DetLow/NonZero.lean`) specializes
+  every variable to `Polynomial.X` and proves that the coefficient at degree `|O| * n` is one
+  (`DetLow.specialized_det_coeff`). Nonidentity permutations have a strictly smaller sum of
+  agreement counts (`DetLow.agreement_sum_lt`).
 * Lemma 6.1. The paper proves Markov's inequality at an endpoint by interpolation at the
   points `cos(kπ/D)`. The Lean proof (`Row/Markov.lean`) deduces it from the theorem
   `Polynomial.Chebyshev.eval_iterate_derivative_le_of_forall_abs_le_one` of Mathlib.

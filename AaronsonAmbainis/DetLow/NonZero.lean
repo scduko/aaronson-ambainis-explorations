@@ -3,11 +3,8 @@ import AaronsonAmbainis.DetLow.Basic
 /-!
 # DetLow: the determinant of the agreement matrix is nonzero
 
-This is Lemma 3.4 of the paper.
-Evaluate every variable at the real number `c = 2 ^ n` (`n = Fintype.card ι`). The evaluated
-matrix has diagonal entries `c ^ n` and off-diagonal entries `c ^ k` with `k + 1 ≤ n`, and a row
-has fewer than `2 ^ n = c` off-diagonal entries, so the matrix is strictly diagonally dominant
-and its determinant is nonzero (Gershgorin: `det_ne_zero_of_sum_row_lt_diag`).
+This is Lemma 3.4 of the paper. Specialize every variable to a single indeterminate.
+The identity permutation contributes the unique term of maximal degree, with coefficient one.
 -/
 
 namespace AaronsonAmbainis
@@ -17,22 +14,22 @@ open Finset MvPolynomial
 
 variable {ι : Type} [Fintype ι] [DecidableEq ι]
 
-/-- Evaluation of all variables at the real number `c`. -/
-noncomputable def evalAt (c : ℝ) : MvPolynomial ι ℤ →+* ℝ :=
-  eval₂Hom (Int.castRingHom ℝ) (fun _ => c)
+/-- Specialization of every variable to the same univariate polynomial. -/
+noncomputable def specialize (c : Polynomial ℤ) : MvPolynomial ι ℤ →+* Polynomial ℤ :=
+  eval₂Hom Polynomial.C (fun _ => c)
 
 /-- The number of coordinates in which `x` and `z` agree. -/
 def agCount (x z : Cube ι) : ℕ := (univ.filter fun i => x i = z i).card
 
 omit [DecidableEq ι] in
-theorem evalAt_agMon (c : ℝ) (x z : Cube ι) :
-    evalAt c (agMon x z) = c ^ agCount x z := by
-  have h : ∀ i, evalAt c (if x i = z i then (X i : MvPolynomial ι ℤ) else 1)
+theorem specialize_agMon (c : Polynomial ℤ) (x z : Cube ι) :
+    specialize c (agMon x z) = c ^ agCount x z := by
+  have h : ∀ i, specialize c (if x i = z i then (X i : MvPolynomial ι ℤ) else 1)
       = if x i = z i then c else 1 := by
     intro i
     by_cases hi : x i = z i
     · rw [if_pos hi, if_pos hi]
-      simp [evalAt]
+      simp [specialize]
     · rw [if_neg hi, if_neg hi, map_one]
   unfold agMon agCount
   rw [map_prod]
@@ -52,66 +49,54 @@ theorem agCount_lt (x z : Cube ι) (h : x ≠ z) : agCount x z < Fintype.card ι
   rw [Finset.filter_ssubset]
   exact ⟨i, mem_univ i, hi⟩
 
-theorem evalMat_apply (c : ℝ) (g : Cube ι → Bool) (x z : Ones g) :
-    (evalAt c).mapMatrix (agMatrix g) x z = c ^ agCount x.1 z.1 :=
-  evalAt_agMon c x.1 z.1
+omit [DecidableEq ι] in
+theorem agCount_le (x z : Cube ι) : agCount x z ≤ Fintype.card ι := by
+  simpa [agCount] using (Finset.card_filter_le (s := (univ : Finset ι))
+    (p := fun i => x i = z i))
 
-/-- A row of the ones of `g` has fewer than `2 ^ n` off-diagonal entries. -/
-theorem card_erase_succ_le (g : Cube ι → Bool) (x : Ones g) :
-    (univ.erase x).card + 1 ≤ 2 ^ Fintype.card ι := by
-  have h2 : (univ.erase x).card < (univ : Finset (Ones g)).card :=
-    Finset.card_erase_lt_of_mem (mem_univ x)
-  have h3 : (univ : Finset (Ones g)).card ≤ 2 ^ Fintype.card ι := by
-    rw [Finset.card_univ]
-    calc Fintype.card (Ones g) ≤ Fintype.card (Cube ι) := Fintype.card_subtype_le _
-      _ = 2 ^ Fintype.card ι := by simp
-  omega
+/-- Only the identity permutation attains the maximal sum of agreement counts. -/
+theorem agreement_sum_lt (g : Cube ι → Bool) (σ : Equiv.Perm (Ones g)) (hσ : σ ≠ 1) :
+    ∑ x, agCount (σ x).1 x.1 < Fintype.card (Ones g) * Fintype.card ι := by
+  classical
+  have hex : ∃ x, σ x ≠ x := by
+    by_contra! h
+    exact hσ (Equiv.ext h)
+  obtain ⟨x, hx⟩ := hex
+  calc
+    ∑ x, agCount (σ x).1 x.1 < ∑ _x : Ones g, Fintype.card ι := by
+      apply Finset.sum_lt_sum
+      · intro y _
+        exact agCount_le _ _
+      · exact ⟨x, mem_univ x, agCount_lt _ _ (fun h => hx (Subtype.ext h))⟩
+    _ = _ := by simp
 
-/-- The evaluated matrix is strictly diagonally dominant when `c = 2 ^ n`. -/
-theorem evalMat_dominant (g : Cube ι → Bool) (c : ℝ) (hc : c = 2 ^ Fintype.card ι)
-    (x : Ones g) :
-    ∑ z ∈ univ.erase x, ‖(evalAt c).mapMatrix (agMatrix g) x z‖
-      < ‖(evalAt c).mapMatrix (agMatrix g) x x‖ := by
-  have hc1 : (1 : ℝ) ≤ c := by
-    rw [hc]
-    exact one_le_pow₀ (by norm_num)
-  have hcpos : 0 < c := lt_of_lt_of_le one_pos hc1
-  have hcard : ((univ.erase x).card : ℝ) + 1 ≤ c := by
-    rw [hc]
-    exact_mod_cast card_erase_succ_le g x
-  have hpow : 0 < c ^ Fintype.card ι := pow_pos hcpos _
-  have hdiag : ‖(evalAt c).mapMatrix (agMatrix g) x x‖ = c ^ Fintype.card ι := by
-    rw [evalMat_apply, agCount_self, Real.norm_of_nonneg (pow_nonneg hcpos.le _)]
-  have hsum : (∑ z ∈ univ.erase x, ‖(evalAt c).mapMatrix (agMatrix g) x z‖) * c
-      ≤ ((univ.erase x).card : ℝ) * c ^ Fintype.card ι := by
-    rw [Finset.sum_mul]
-    calc ∑ z ∈ univ.erase x, ‖(evalAt c).mapMatrix (agMatrix g) x z‖ * c
-        ≤ ∑ _z ∈ univ.erase x, c ^ Fintype.card ι := by
-          apply Finset.sum_le_sum
-          intro z hz
-          have hzx : x.1 ≠ z.1 := fun h => (Finset.ne_of_mem_erase hz) (Subtype.ext h.symm)
-          rw [evalMat_apply, Real.norm_of_nonneg (pow_nonneg hcpos.le _), ← pow_succ]
-          exact pow_le_pow_right₀ hc1 (agCount_lt x.1 z.1 hzx)
-      _ = ((univ.erase x).card : ℝ) * c ^ Fintype.card ι := by
-          rw [Finset.sum_const, nsmul_eq_mul]
-  rw [hdiag]
-  have hlt : (∑ z ∈ univ.erase x, ‖(evalAt c).mapMatrix (agMatrix g) x z‖) * c
-      < c ^ Fintype.card ι * c := by
-    calc (∑ z ∈ univ.erase x, ‖(evalAt c).mapMatrix (agMatrix g) x z‖) * c
-        ≤ ((univ.erase x).card : ℝ) * c ^ Fintype.card ι := hsum
-      _ < c * c ^ Fintype.card ι := by
-          apply mul_lt_mul_of_pos_right _ hpow
-          linarith
-      _ = c ^ Fintype.card ι * c := mul_comm _ _
-  exact lt_of_mul_lt_mul_right hlt hcpos.le
+/-- The top coefficient after specialization is one. -/
+theorem specialized_det_coeff (g : Cube ι → Bool) :
+    (((specialize Polynomial.X).mapMatrix (agMatrix g)).det).coeff
+      (Fintype.card (Ones g) * Fintype.card ι) = 1 := by
+  classical
+  have hterm (σ : Equiv.Perm (Ones g)) :
+      (∏ x, (specialize Polynomial.X).mapMatrix (agMatrix g) (σ x) x) =
+        (Polynomial.X : Polynomial ℤ) ^ (∑ x, agCount (σ x).1 x.1) := by
+    change (∏ x, specialize Polynomial.X (agMon (σ x).1 x.1)) = _
+    simp_rw [specialize_agMon]
+    exact Finset.prod_pow_eq_pow_sum _ _ _
+  rw [Matrix.det_apply]
+  simp_rw [hterm]
+  rw [Polynomial.finsetSum_coeff]
+  rw [Finset.sum_eq_single (1 : Equiv.Perm (Ones g))]
+  · simp [agCount_self]
+  · intro σ _ hσ
+    have hlt := agreement_sum_lt g σ hσ
+    simp [Polynomial.coeff_X_pow, Nat.ne_of_gt hlt]
+  · simp
 
 /-- Lemma 3.4 of the paper: the determinant of the agreement matrix is nonzero. -/
 theorem agMatrix_det_ne_zero (g : Cube ι → Bool) : (agMatrix g).det ≠ 0 := by
   intro h0
-  have hne : ((evalAt ((2 : ℝ) ^ Fintype.card ι)).mapMatrix (agMatrix g)).det ≠ 0 :=
-    det_ne_zero_of_sum_row_lt_diag (fun x => evalMat_dominant g _ rfl x)
-  apply hne
-  rw [← RingHom.map_det, h0, map_zero]
+  have h := specialized_det_coeff g
+  rw [← RingHom.map_det, h0, map_zero] at h
+  simp at h
 
 end DetLow
 end AaronsonAmbainis
