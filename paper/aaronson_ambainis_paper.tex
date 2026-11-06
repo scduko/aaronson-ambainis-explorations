@@ -1645,8 +1645,8 @@ is derived from the Butterfly Lemma \cite[Section~3]{Rei} (see also \cite[Sectio
 which Kahn, Saks and Smyth derive the dual inequality \cite[Section~2]{KSS}.
 
 In the second part the weights $w$ are removed: the Cauchy--Schwarz
-inequality, applied to a sum over the pairs, leads to an expression in $w$ which can be minimised
-explicitly.
+inequality, applied to a sum over the pairs, leads to an expression in $w$ which is bounded by choosing normalized arithmetic-mean
+weights.
 
 The all-pairs inequality (Proposition~\ref{prop:pairs}) and the removal of the weights
 (Lemma~\ref{lem:weights}) are used in Section~\ref{sec:level}.
@@ -1659,6 +1659,10 @@ For $F\subseteq[n]$ and $z,u\in Q_n$ let $\gamma_F(z,u)\in Q_n$ be the point wit
 \]
 For fixed $z$ the points $\gamma_F(z,u)$, $u\in Q_n$, form the subcube through $z$ in which the
 coordinates in $F$ are free.
+
+The following identities describe the same subcube restriction in the ambient cube; they are
+used in the Lean formalization. The proof of Proposition~\ref{prop:pairs} below works directly
+with the subcubes.
 
 \begin{lemma}[Gluing]\label{lem:glue}
 Let $F\subseteq[n]$.
@@ -1703,96 +1707,33 @@ $\sum_{j\in\Delta(x,y)}w_j\lambda^{x}_j\lambda^{y}_j>0$ for all $x\in\cO$ and $y
 \end{proposition}
 
 \begin{proof}
-The positivity is contained in Lemma~\ref{lem:overlap}.
+The positivity follows from Lemma~\ref{lem:overlap}. If $n=0$, the function is constant and
+both sides of \eqref{eq:pairs} are zero, so suppose $n\ge1$.
 
-\smallskip
-\emph{Step 1: one set of free coordinates.} Fix $F\subseteq[n]$. For $x\in Q_n$ put
-\[
-   T_F(x)=\Bigl(\sum_{j\in F}w_j\,\lambda^{x}_j\,\lambda^{x^{F}}_j\Bigr)^{-1}
-   \ \ \text{if $g(x)=1$ and $g(x^{F})=0$,}\qquad T_F(x)=0\ \ \text{otherwise.}
-\]
-In the first case the sum is positive by Lemma~\ref{lem:overlap}, because $\Delta(x,x^{F})=F$.
-
-We
-show that
-\begin{equation}\label{eq:pairsF}
-   \sum_{x\in Q_n}T_F(x)\;\le\;\sum_{j\in F}\frac{b_j(g)}{w_j}.
-\end{equation}
-
-Fix $z\in Q_n$. Let $g_{z}$ be the Boolean function $g_{z}(u)=g(\gamma_F(z,u))$ on $Q_n$ (this is
-the restriction of $g$ to the subcube through $z$ with free coordinates $F$, written as a function
-on the whole cube which does not depend on the coordinates outside $F$; so the antipodal
-inequality applies without renumbering the coordinates), and
-for $u\in Q_n$ let $\mu^{u}\in[0,\infty)^{n}$ be the vector with
-\[
-   \mu^{u}_j=\lambda^{\gamma_F(z,u)}_j\quad(j\in F),\qquad \mu^{u}_j=0\quad(j\notin F).
-\]
-
-Then $\mu^{u}$ is a row of $g_{z}$ at $u$. Indeed, let $S$ be a sensitive block of $g_{z}$ at $u$
-and $x=\gamma_F(z,u)$. By Lemma~\ref{lem:glue}(i),
-$g(x^{S\cap F})=g_{z}(u^{S})\ne g_{z}(u)=g(x)$; so $S\cap F$ is a sensitive block of $g$ at $x$, and
-$\mu^{u}(S)=\lambda^{x}(S\cap F)\ge1$.
-
-We apply Theorem~\ref{thm:anti} to $g_{z}$ with the weights
-$w$ and the rows $\mu^{u}$:
+Let $C$ be a subcube with free coordinates $F\subseteq[n]$. Restrict $g$ to $C$, and restrict
+$\lambda^x$ to the coordinates in $F$ for each $x\in C$. These restricted vectors are rows of
+$g|_C$: a sensitive block of the restriction is a sensitive block of $g$ contained in $F$.
+Theorem~\ref{thm:anti}, applied on $C$, therefore gives
 \begin{equation}\label{eq:anti-z}
-   \sum_{u\in Z(g_{z})}\Bigl(\sum_{j=1}^{n}w_j\,\mu^{u}_j\,\mu^{\bar u}_j\Bigr)^{-1}
-   \;\le\;\sum_{j=1}^{n}\frac{b_j(g_{z})}{w_j}.
+   \sum_{\substack{x\in C\\g(x)=1,\ g(x^F)=0}}
+   \Bigl(\sum_{j\in F}w_j\lambda^x_j\lambda^{x^F}_j\Bigr)^{-1}
+   \;\le\;\sum_{j\in F}\frac{b_j(g|_C)}{w_j}.
 \end{equation}
+For a fixed $F$, the subcubes with free coordinates $F$ partition $Q_n$. Each boundary edge
+in a direction $j\in F$ belongs to exactly one of them. Summing \eqref{eq:anti-z} over these
+subcubes yields
+\begin{equation}\label{eq:pairsF}
+   \sum_{\substack{x\in Q_n\\g(x)=1,\ g(x^F)=0}}
+   \Bigl(\sum_{j\in F}w_j\lambda^x_j\lambda^{x^F}_j\Bigr)^{-1}
+   \;\le\;\sum_{j\in F}\frac{b_j(g)}{w_j}.
+\end{equation}
+The case $F=\varnothing$ contributes zero on both sides.
 
-\smallskip
-\emph{The left-hand side of \eqref{eq:anti-z}.} Let $u\in Q_n$ and $x=\gamma_F(z,u)$. By
-Lemma~\ref{lem:glue}(i), $\gamma_F(z,\bar u)=x^{F}$. Hence $u\in Z(g_{z})$ if and only if $g(x)=1$
-and $g(x^{F})=0$, and
-\[
-   \sum_{j}w_j\,\mu^{u}_j\,\mu^{\bar u}_j\;=\;\sum_{j\in F}w_j\,\lambda^{x}_j\,\lambda^{x^{F}}_j .
-\]
-So the left-hand
-side is $\sum_{u\in Q_n}T_F(\gamma_F(z,u))$.
-
-\smallskip
-\emph{The right-hand side of \eqref{eq:anti-z}.} For $x\in Q_n$ let $\beta_j(x)=1$ if $g(x)=1$ and
-$g(x^{j})=0$, and $\beta_j(x)=0$ otherwise; thus $b_j(g)=\sum_{x\in Q_n}\beta_j(x)$.
-
-If $j\notin F$,
-then $g_{z}(u^{j})=g_{z}(u)$ for all $u$ by Lemma~\ref{lem:glue}(i), and so $b_j(g_{z})=0$. If
-$j\in F$, then $g_{z}(u^{j})=g(\gamma_F(z,u)^{j})$, and so
-\[
-   b_j(g_{z})\;=\;\sum_{u\in Q_n}\beta_j\bigl(\gamma_F(z,u)\bigr).
-\]
-
-Therefore \eqref{eq:anti-z} reads
-\[
-   \sum_{u\in Q_n}T_F\bigl(\gamma_F(z,u)\bigr)\;\le\;
-   \sum_{j\in F}\frac1{w_j}\sum_{u\in Q_n}\beta_j\bigl(\gamma_F(z,u)\bigr).
-\]
-
-This holds for every $z\in Q_n$. Adding over all $z$, we get
-\begin{align*}
-   2^{n}\sum_{x\in Q_n}T_F(x)
-   &\;\overset{\text{Lem.~\ref{lem:glue}(ii)}}{=}\;\sum_{z\in Q_n}\sum_{u\in Q_n}T_F\bigl(\gamma_F(z,u)\bigr)
-   \;\le\;\sum_{j\in F}\frac1{w_j}\sum_{z\in Q_n}\sum_{u\in Q_n}\beta_j\bigl(\gamma_F(z,u)\bigr)\\
-   &\;\overset{\text{Lem.~\ref{lem:glue}(ii)}}{=}\;2^{n}\sum_{j\in F}\frac{b_j(g)}{w_j},
-\end{align*}
-which is \eqref{eq:pairsF} multiplied by $2^{n}$.
-
-\smallskip
-\emph{Step 2: all sets of free coordinates.} We add \eqref{eq:pairsF} over all $F\subseteq[n]$.
-On the left, fix $x\in Q_n$. The map $F\mapsto x^{F}$ is a bijection from the set of all subsets of
-$[n]$ onto $Q_n$, with inverse $y\mapsto\Delta(x,y)$. So $\sum_{F}T_F(x)=0$ if $g(x)=0$, and if
-$g(x)=1$, then
-\[
-   \sum_{F\subseteq[n]}T_F(x)\;=\;\sum_{y\in\cN}
-   \Bigl(\sum_{j\in\Delta(x,y)}w_j\,\lambda^{x}_j\,\lambda^{y}_j\Bigr)^{-1}.
-\]
-Summing over $x$ gives the left-hand side of \eqref{eq:pairs}.
-
-On the right, every $j\in[n]$ belongs
-to exactly $2^{n-1}$ of the subsets of $[n]$, because $F\mapsto F\triangle\{j\}$ exchanges the
-subsets which contain $j$ and those which do not. Hence
-\[
-   \sum_{F\subseteq[n]}\ \sum_{j\in F}\frac{b_j(g)}{w_j}\;=\;2^{n-1}\sum_{j}\frac{b_j(g)}{w_j}. \qedhere
-\]
+Now sum over $F\subseteq[n]$. Each ordered pair $(x,y)\in\cO\times\cN$ occurs exactly once
+on the left, for $F=\Delta(x,y)$. Equivalently, $x$ and $y$ are antipodal in the unique subcube
+obtained by fixing their agreeing coordinates. On the right, a boundary edge in direction $j$
+is counted once for each $F$ containing $j$, hence exactly $2^{n-1}$ times. This gives
+\eqref{eq:pairs}.
 \end{proof}
 
 \subsection{Removing the weights}
@@ -1878,31 +1819,22 @@ All the factors are non-negative, so that
 \end{equation}
 
 \smallskip
-\emph{Step 2: the choice of the weights.} Let $r_j=\sqrt{X_jY_j}$ and $R=\sum_{j}r_j$. For $\eps>0$
-the weights $w_j=1/(r_j+\eps)$ are positive, and
-$w_jX_jY_j=r_j^{2}/(r_j+\eps)\le r_j$ and $1/w_j=r_j+\eps$. So \eqref{eq:allw} gives
+\emph{Step 2: normalized weights.} Put $p_j=X_j/V_A$ and $q_j=Y_j/V_B$. By
+\eqref{eq:XY}, these are non-negative vectors with $\sum_jp_j=\sum_jq_j=1$.
+For $\eps>0$ choose $w_j=(p_j+q_j+\eps)^{-1}$. Then
 \[
-   (V_{A}V_{B})^{2}\;\le\;C\,R\,(R+n\eps)\qquad\text{for every }\eps>0,
+   \sum_j\frac1{w_j}=2+n\eps,\qquad
+   \sum_jw_jX_jY_j
+   =V_AV_B\sum_j\frac{p_jq_j}{p_j+q_j+\eps}
+   \le\frac{V_AV_B}{4}\sum_j(p_j+q_j)=\frac{V_AV_B}{2},
 \]
-and letting $\eps\to0$ we obtain
+where the inequality follows from $4p_jq_j\le(p_j+q_j)^2$.
+Substitution in \eqref{eq:allw} and division by $V_AV_B>0$ give
 \[
-   (V_{A}V_{B})^{2}\;\le\;C\,R^{2}.
+   V_AV_B\le C\bigl(1+n\eps/2\bigr).
 \]
-
-(The weights $1/r_j$, which minimise the right-hand side of \eqref{eq:allw} when all $r_j$ are
-positive, are not available if some $r_j$ is $0$.)
-
-\smallskip
-\emph{Step 3: the Cauchy--Schwarz inequality over the coordinates.} By the Cauchy--Schwarz
-inequality and \eqref{eq:XY},
-\[
-   R^{2}=\Bigl(\sum_{j=1}^{n}\sqrt{X_j}\,\sqrt{Y_j}\Bigr)^{2}\;\le\;
-   \Bigl(\sum_{j=1}^{n}X_j\Bigr)\Bigl(\sum_{j=1}^{n}Y_j\Bigr)=V_{A}V_{B}.
-\]
-
-\smallskip
-\emph{Conclusion.} Steps 2 and 3 give $(V_{A}V_{B})^{2}\le C\,V_{A}V_{B}$. Since
-$V_{A}V_{B}>0$ we may divide, and get $V_{A}V_{B}\le C$, which is the assertion.
+Letting $\eps\downarrow0$ proves the assertion. The positive $\eps$ ensures that the weights
+are defined even when $p_j=q_j=0$.
 \end{proof}
 
 For the rows of a Boolean function, Lemma~\ref{lem:weights} and the all-pairs inequality (Proposition~\ref{prop:pairs}) give the two-sided
@@ -3198,9 +3130,9 @@ $x^{T\cup\{j\}}=(x^{j})^{T}$ for these $T$. So
    \;=\;\frac{(\Av_Rf)(x)+(\Av_Rf)(x^{j})}{2}.
 \]
 
-By \eqref{eq:avg-step}, the properties of Lemma~\ref{lem:avg-one} pass to averages over sets. The
-next lemma states them in the form in which they are used in the proof of
-Theorem~\ref{thm:infl}.
+The properties of Lemma~\ref{lem:avg-one} extend to averages over sets. We prove them directly
+below, in the form used in Theorem~\ref{thm:infl}; alternatively, \eqref{eq:avg-step} gives an
+inductive proof.
 
 \begin{lemma}[Averaging over a set of coordinates]\label{lem:avg-set}
 Let $n\ge0$, let $f\colon Q_n\to\R$, and let $K$ be a real number such that for every $x\in Q_n$
@@ -3214,29 +3146,39 @@ there is a row of $f$ at $x$ of cost at most $K$. Let $R\subseteq[n]$, and put $
 \end{lemma}
 
 \begin{proof}
-We use induction on $\abs{R}$. If $R=\emptyset$, then $h=f$, and the four statements are clear.
-
-Let $R=R'\cup\{j\}$ with $j\notin R'$, and suppose that the lemma holds for $R'$ and the function
-$h'=\Av_{R'}f$. By \eqref{eq:avg-step}, $h=\Av_jh'$. We apply Lemma~\ref{lem:avg-one} to the
-function $h'$ and the coordinate $j$.
-
-(i) By the statement (i) for $R'$, the function $h'$ has a row of cost at most $K$ at every point.
-By Lemma~\ref{lem:avg-one}(iv), so has $h$.
-
-(ii) By Lemma~\ref{lem:avg-one}(i) and by the statement (iii) for $R'$,
+Let $T$ be uniformly distributed over the subsets of $R$. Thus
+$h(x)=\E_T f(x^T)$, equivalently $h=\E[f\mid x_{R^c}]$.
+Choose a row $a^z$ of cost at most $K$ at each $z\in Q_n$, and put $b^x=\E_Ta^{x^T}$.
+This vector is non-negative and has cost at most $K$. Since coordinate flips commute,
+for every $S\subseteq[n]$ we have
 \[
-   \Var(h')\;=\;\Var(h)+\Inf_j(h')\;\le\;\Var(h)+\Inf_j(f).
+   |h(x)-h(x^S)|
+   \le\E_T|f(x^T)-f((x^T)^S)|
+   \le\E_Ta^{x^T}(S)=b^x(S).
 \]
-Together with the statement (ii) for $R'$ this gives
+This proves (i).
+
+Averaging deletes exactly the Fourier terms whose supports meet $R$:
 \[
-   \Var(f)\;\le\;\Var(h')+\sum_{i\in R'}\Inf_i(f)\;\le\;\Var(h)+\sum_{i\in R}\Inf_i(f).
+   h=\sum_{U\cap R=\varnothing}\hat f(U)\chi_U.
 \]
-
-(iii) By Lemma~\ref{lem:avg-one}(ii) and by the statement (iii) for $R'$, we have
-$\Inf_k(h)\le\Inf_k(h')\le\Inf_k(f)$ and $L_k(h)\le L_k(h')\le L_k(f)$ for every $k$.
-
-(iv) By Lemma~\ref{lem:avg-one}(iii), $L_j(h)=0$. For $i\in R'$, the statement (iv) for $R'$ and
-Lemma~\ref{lem:avg-one}(ii) give $0\le L_i(h)\le L_i(h')=0$.
+By orthonormality of the characters,
+$\Var(f)=\sum_{U\ne\varnothing}\hat f(U)^2$ and
+$\Inf_k(f)=\sum_{U\ni k}\hat f(U)^2$. Consequently
+\[
+   \Var(f)-\Var(h)
+   =\sum_{U\cap R\ne\varnothing}\hat f(U)^2
+   \le\sum_{i\in R}\sum_{U\ni i}\hat f(U)^2
+   =\sum_{i\in R}\Inf_i(f),
+\]
+which is (ii); deletion of terms also gives $\Inf_k(h)\le\Inf_k(f)$.
+For the remaining inequality in (iii), the triangle inequality and invariance of the uniform
+measure under $x\mapsto x^T$ give
+\[
+   L_k(h)=\E_x|\E_T(f(x^T)-f((x^T)^k))|
+   \le\E_T\E_x|f(x^T)-f((x^T)^k)|=L_k(f).
+\]
+Finally, $h$ is independent of every coordinate in $R$, proving (iv).
 \end{proof}
 
 \subsection{From mean absolute increments to influences}\label{subsec:infl}

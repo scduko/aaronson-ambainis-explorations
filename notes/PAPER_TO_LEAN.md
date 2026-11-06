@@ -151,8 +151,8 @@ hypothesis is `DetBij.exists_bijection DetLow.lowestUnit DetLow.lowestBound`.
 |---|---|---|
 | Lemma 5.1 (gluing) | `glue`; part (i): `glue_flipSet`, `glue_antipode`, `glue_flipSet_singleton_of_mem`, `glue_flipSet_singleton_of_not_mem`; part (ii): `sum_sum_glue` | `TwoSided/Glue.lean` |
 | Proposition 5.2 (all-pairs inequality) | statement `AllPairsInequality` (the inequality multiplied by `2`), proof `allPairsInequality` (through `allPairs_of_antipodal`); positivity: `Bridge.allPairs_inner_pos` | `AllPairsDefs.lean`, `Chain.lean`, `TwoSided/AllPairs.lean`, `Bridge/Positivity.lean` |
-| Step 1 of the proof of Proposition 5.2 | `allPairsTerm` (the term `T_F(x)`), `allPairs_core` | `TwoSided/AllPairsCore.lean` |
-| Lemma 5.3 (removing the weights) | `abstract_cs`; its Steps 1, 2 and 3 are `pair_cs`, `weight_choice` and a part of `cs_core`, and its conclusion uses `le_of_sq_le_mul` | `TwoSided/CauchySchwarz.lean` |
+| Fixed-free-set inequality in the proof of Proposition 5.2 | `allPairsTerm` (the summand for a fixed free set), `allPairs_core` | `TwoSided/AllPairsCore.lean` |
+| Lemma 5.3 (removing the weights) | `abstract_cs`; `pair_cs` gives the pair inequality, and `weight_choice` and `cs_core` complete the weight optimization, using `le_of_sq_le_mul` | `TwoSided/CauchySchwarz.lean` |
 | Theorem 5.4 (two-sided inequality) | statement `TwoSidedInequality`, proof `twoSidedInequality` (through `twoSided_of_allPairs`); the assertion `‖λ^x‖ ≥ 1`: `Bridge.row_norm_ge_one` | `Statements.lean`, `Chain.lean`, `TwoSided/RemoveWeights.lean`, `Bridge/Positivity.lean` |
 
 `abstract_cs` does not assume that the two index sets are non-empty, and it writes the
@@ -324,3 +324,24 @@ numbers `L_j(f)`.
 | `Bridge.rowBound_iff_printedML`, `Bridge.rowBound_iff_fin` | two further forms of the hypothesis `RowBound` | `Bridge/PrintedRow.lean`, `Bridge/Transport.lean` |
 | `DetLow.exists_lowest_le_bdry`, `DetLow.exists_monomial_weight_le` | two corollaries of `DetLow.lowestBound` | `DetLow/Corollary.lean` |
 | `Bridge.conj6_instance`, `Bridge.problemPM_instance` | the hypotheses of the Mathlib-only statements can be satisfied (the statements are not vacuous) | `Bridge/Instance.lean` |
+
+### Direct subcube proof of the all-pairs inequality
+
+The paper now proves Proposition 5.2 by applying the antipodal inequality on each actual
+subcube. Each opposite-valued ordered pair is antipodal in exactly one subcube, and each
+direction-`j` boundary edge belongs to `2^(n-1)` subcubes. The Lean proof retains the ambient-cube
+gluing construction of Lemma 5.1, which realizes the same counting argument with repeated
+coordinates. The theorem statement and constant are unchanged.
+
+### Weight removal and averaging
+
+For Lemma 5.3, the paper uses normalized arithmetic-mean weights
+`w_j = 1 / (X_j/V_A + Y_j/V_B + epsilon)` and `4pq <= (p+q)^2`.
+The Lean proof still uses square-root weights and Cauchy--Schwarz over the coordinates;
+both arguments give the same bound, including zero coordinates by positive regularization.
+
+For Lemma 8.2, the paper proves row preservation by averaging the rows with the same random
+coordinate flips, the variance bound by deleting Fourier supports meeting the averaged set,
+and contraction of mean absolute increments by the triangle inequality.
+`Average.exists_avg_set` retains the equivalent induction through one-coordinate averages.
+No statement, exponent, or constant changes in either lemma.
